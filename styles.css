@@ -143,9 +143,19 @@ footer{border-top:1px solid var(--line);padding:22px 0;color:var(--mute);font-si
 .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#12233a;color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;opacity:0;transition:.2s;z-index:200;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .empty{text-align:center;padding:44px;color:var(--mute)}
+/* 移动端防撑宽：表格自身横向滚动，不撑破栅格 */
+table.t{display:block;max-width:100%;overflow-x:auto}
+table.t th,table.t td{white-space:normal}
+pre.mail{white-space:pre-wrap;word-break:break-word}
+.wzq{font-size:19px}
+
 @media (max-width:760px){
   header.top h1{font-size:24px}
   .kv{grid-template-columns:86px 1fr}
+  .grid.g2,.grid.g3{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr}
+  .g2>*{min-width:0}
+  header.top h1{font-size:23px}
 }
 @media print{
   nav.tabs,header.top .badges,.btn,.star{display:none!important}
