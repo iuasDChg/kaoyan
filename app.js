@@ -20,6 +20,28 @@ function bucketCls(b){return b==="rush"?"r":(b==="safe"?"b":"g")}
 function toast(t){var e=document.getElementById("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(function(){e.classList.remove("on")},2200)}
 function $(id){return document.getElementById(id)}
 
+/* ---------- 就业补充与考分标尺 ---------- */
+function mergeEmp(){S.forEach(function(s){if(!s.emp&&KD.empExtra&&KD.empExtra[s.id])s.emp=KD.empExtra[s.id];if(!s.emp){s.emp=[s.job]}})}
+function numLine(l){var t=l&&l.total;if(typeof t==="number")return t;if(typeof t==="string"){var m=t.match(/(\d{3})/);if(m&&/^\d{3}$/.test(m[1]))return +m[1]}return null}
+function scoreInfo(s,ans){
+  var M=KD.scoreModel, zone=s.zone||"A";
+  var fl=M.floor["理学"][zone], fg=M.floor["工学"][zone];
+  var ref=null, refL=null;
+  (s.line||[]).forEach(function(l){var t=numLine(l);if(t&&t>=250&&t<=500){
+    var chem=/化学|0703|材化|材料与化工/.test(l.n||"");
+    if(ref===null||(chem&&refL&&!/化学|0703|材化|材料与化工/.test(refL.n))) {ref=t;refL=l}
+  }});
+  var add=8; M.margin.forEach(function(b){ if(s.diff>=b[0]) add=b[1] });
+  var path=(ans&&ans.path)||"";
+  var floorUse = (path==="0856"||path==="0817") ? fg : (path==="0703" ? fl : (hasProg(s,["0703"])?fl:fg));
+  if(s.selfLine){ floorUse=Math.max(floorUse,300); add=add+5 }   /* 34 所自划线：学校线通常≥300，再留安全边际 */
+  var base=Math.max(floorUse, ref||0);
+  var target=Math.round((base+add)/5)*5;
+  return {fl:fl,fg:fg,floorUse:floorUse,ref:ref,refL:refL,add:add,target:target,
+    basis: (ref?("往年参考线 "+ref+"（"+(refL.y||"")+" "+(refL.n||"")+"）+ 难度加成 "+add) : "国家线地板 "+floorUse+" + 难度加成 "+add+"（未核实到该校院线）") + (s.selfLine?"；自划线院校按学校线≥300 估算":""),
+    single:M.single, selfLine:!!s.selfLine};
+}
+
 /* ---------- 匹配模型 ---------- */
 function ability(a){
   var M=KD.abilityModel, v=M.base;
@@ -157,7 +179,7 @@ function initFilters(){
 }
 var quick={};
 function libList(){
-  var q=$("fSearch").value.trim(), t=$("fTier").value, r=$("fRegion").value, hx=$("fHx").value, hg=$("fHg").value, d=$("fDir").value, mt=$("fMath").value, df=$("fDiff").value, so=$("fSort").value;
+  var q=$("fSearch").value.trim(), tg=$("fTarget")?$("fTarget").value:"", t=$("fTier").value, r=$("fRegion").value, hx=$("fHx").value, hg=$("fHg").value, d=$("fDir").value, mt=$("fMath").value, df=$("fDiff").value, so=$("fSort").value;
   var out=S.filter(function(s){
     if(q){var hay=(s.name+s.city+s.prov+s.tier+s.dirs.join("")+s.colleges.join("")+s.platform+s.job).toLowerCase();if(hay.indexOf(q.toLowerCase())<0)return false}
     if(t){var lab=s.tier.indexOf("985")>=0?"985":(s.tier.indexOf("211")>=0?"211 / 双一流":(s.tier.indexOf("双一流")>=0?"双一流（非211）":(s.id==="ucas"?"中科院研究所":"省属重点 / 双非")));if(lab!==t)return false}
@@ -168,6 +190,7 @@ function libList(){
     if(mt==="no"&&!hasProg(s,["0703"]))return false;
     if(mt==="yes"&&!hasProg(s,["0817","0856"]))return false;
     if(df&&tierBucket(s.diff)!==df)return false;
+    if(tg){var tt=scoreInfo(s,state.ans).target; if(tg==="t1"&&tt>285)return false; if(tg==="t2"&&(tt<286||tt>305))return false; if(tg==="t3"&&(tt<306||tt>325))return false; if(tg==="t4"&&tt<=325)return false}
     if(quick.fav&&state.fav.indexOf(s.id)<0)return false;
     if(quick.selfline&&s.selfLine)return false;
     if(quick.diaoji&&(!/调剂|缺额|大户/.test(s.diaoji)))return false;
@@ -191,7 +214,9 @@ function cardHTML(s){
    '<div class="grade"><span class="pill n">化学 '+esc(s.hx)+'</span><span class="pill n">化工 '+esc(s.hg)+'</span><span class="pill '+bucketCls(b)+'">'+bucketLabel(b)+"档</span>"+(s.id==="hnie"?"<span class='pill y'>本校 · 最稳兜底</span>":"")+"</div>"+
    '<div class="gline">'+esc(s.programs.map(function(p){return p.c+" "+p.n}).join(" ｜ "))+"</div>"+
    '<div class="gline">'+mark((s.line[0]?s.line[0].s:"◇")+" 复试线参考："+esc((s.line[0]&&(s.line[0].total||s.line[0].n))||"需核验"))+"</div>"+
+   (function(){var q=scoreInfo(s,state.ans);return '<div class="gline"><b style="color:#1b4d8f;font-size:15px">建议目标分 ≈ '+q.target+'</b><span class="note"> 分（'+(q.ref?"参考院线":"国家线地板")+q.floorUse+' + '+q.add+'）</span></div>'})()+
    '<div class="gline note">方向：'+esc(s.dirs.slice(0,4).join("、"))+"</div>"+
+   '<div class="gline note">就业：'+esc((s.emp&&s.emp[0]?s.emp[0]:s.job).slice(0,46))+"…</div>"+
    '<div class="diffbar"><i style="width:'+Math.round(s.diff/5*100)+'%"></i></div>'+
    '<div class="scfoot"><span class="note">难度 '+s.diff.toFixed(1)+" / 5</span><div class='row'><button class='btn sm ghost' data-open='"+s.id+"'>全部资料</button>"+
    '<button class="btn sm ghost" data-cmp="'+s.id+'">对比</button></div></div></div>';
@@ -215,6 +240,7 @@ function openSchool(id){
   var s=S.filter(function(x){return x.id===id})[0];if(!s)return;
   var a=state.ans, r=recommend(s,a), items=(s.todo||[]).concat(["核对 2026/2027 招生简章专业目录（科目代码、参考书、招生人数、推免数）","确认初试是否考数学与英语一/英语二","查近三年拟录取名单最低分与平均分"]);
   var chk=state.chk[id]||[];
+  var scoreBlock="";
   var html='<div class="dh"><div><h2 style="margin-bottom:2px">'+esc(s.name)+'</h2><div class="note">'+esc(s.city+" · "+s.prov+" · 院校代码 "+s.code)+"</div>"+
     '<div class="row" style="margin-top:6px"><span class="pill '+(s.id==="ucas"?"y":(/985/.test(s.tier)?"tier":(/211|双一流/.test(s.tier)?"tier2":"n")))+'">'+esc(s.tier)+"</span>"+
     '<span class="pill n">化学 '+esc(s.hx)+' '+sMark("★")+'</span><span class="pill n">化工 '+esc(s.hg)+' '+sMark("★")+"</span>"+
@@ -237,12 +263,39 @@ function openSchool(id){
 
   html+='<div class="dsec"><div class="lbl">分数线（务必区分“复试线”与“录取最低分”）</div><table class="t"><tr><th>年份</th><th>口径</th><th>总分</th><th>单科</th><th>可信度</th></tr>'+
    s.line.map(function(l){return "<tr><td>"+esc(l.y)+"</td><td>"+esc(l.n)+(l.note?'<div class="note">'+esc(l.note)+"</div>":"")+"</td><td><b>"+esc(l.total==null?"—":l.total)+"</b></td><td>"+esc(l.single||"—")+"</td><td>"+sMark(l.s||"◇")+"</td></tr>"}).join("")+"</table>"+
-   '<p class="note" style="margin:8px 0 0">同期国家线参照（2026 年）：理学 A 区 275 / B 区 265；工学 A 区 264 / B 区 254。'+(s.selfLine?"该校为自划线院校，与国家线无直接对应关系。":"")+"</p></div>";
+   '<p class="note" style="margin:8px 0 0">'+esc(KD.scoreModel.note)+"</p></div>";
 
+  (function(){
+    var q=scoreInfo(s,state.ans);
+    var gap="";
+    var mine=parseFloat(state.ans.score);
+    if(!isNaN(mine)&&mine>150){
+      var g=mine-q.target;
+      gap = g>=0 ? "<span class='pill g'>你填的模拟分 "+mine+" 已达目标分（余量 "+g+" 分）</span>"
+                 : "<span class='pill r'>你填的模拟分 "+mine+" 距目标分还差 "+(-g)+" 分</span>";
+    } else gap="<span class='note'>在“智能匹配”里填上模拟分，这里会直接算出差多少。</span>";
+    var html='<div class="dsec"><div class="lbl">考分标尺：这所学校初试至少要考多少分</div>'+
+      '<div class="row" style="align-items:flex-end;gap:18px"><div><div class="note">建议目标分（初试总分）</div><div class="big">'+q.target+'</div></div>'+
+      '<div class="note" style="flex:1;min-width:220px">算法：'+esc(q.basis)+" = <b>"+q.target+"</b> 分（取 5 的整数）<br>"+esc(KD.scoreModel.rule)+"</div></div>"+
+      '<table class="t" style="margin-top:10px"><tr><th>项目</th><th>分值</th><th>说明</th></tr>'+
+      '<tr><td>国家线地板（理学）</td><td><b>'+q.fl+'</b></td><td>2026 年 '+s.zone+" 区 · 0703 化学学硕适用"+sMark("★")+"</td></tr>"+
+      '<tr><td>国家线地板（工学）</td><td><b>'+q.fg+'</b></td><td>2026 年 '+s.zone+" 区 · 0817/0856 专硕学硕适用"+sMark("★")+"</td></tr>"+
+      '<tr><td>该校往年参考线</td><td><b>'+(q.ref||"—")+'</b></td><td>'+esc(q.refL?(q.refL.y+" "+q.refL.n):"未核实到院线，按国家线地板估算")+" "+sMark(q.refL?(q.refL.s||"◇"):"○")+"</td></tr>"+
+      '<tr><td>难度加成</td><td><b>+'+q.add+'</b></td><td>难度 '+s.diff.toFixed(1)+"/5，复试线只是进门槛，录取最低分通常更高</td></tr>"+
+      '<tr><td>单科要求</td><td colspan="2">'+esc(q.single)+"</td></tr></table>"+
+      '<div class="row" style="margin-top:10px">'+gap+(q.selfLine?"<span class='pill y'>34 所自划线：以学校线+院线为准，不看国家线</span>":"")+"</div></div>";
+    scoreBlock=html;
+  })();
+
+  html+=scoreBlock;
   html+='<div class="dsec"><div class="lbl">公平度、复试与调剂</div><table class="t"><tr><th>项目</th><th>情况</th><th>可信度</th></tr>'+
    s.fair.map(function(f){return "<tr><td>"+esc(f.k)+"</td><td>"+esc(f.v)+"</td><td>"+sMark(f.s||"◇")+"</td></tr>"}).join("")+
    "<tr><td>调剂</td><td>"+mark(s.diaoji)+"</td><td>"+sMark("◇")+"</td></tr></table>"+
    '<p class="note">“口碑类”信息来自历年考生反馈与公开讨论，属参考性质；最终请以院校复试录取细则文字为准。</p></div>';
+
+  html+='<div class="dsec"><div class="lbl">就业与出路</div><div class="note" style="margin-bottom:8px">'+esc(s.job)+"</div><ul class='tight'>"+
+   (s.emp||[]).map(function(x){return "<li>"+esc(x)+"</li>"}).join("")+"</ul>"+
+   '<div class="sep"></div><div class="note">就业数据提示：各校年度就业质量报告的口径（签约率、平均薪资）差异很大，且多数已不再公开发布；上面的“典型雇主”是行业与校友网络的常识性归纳，'+sMark("◇")+" 建议以目标学院公布的毕业去向表与学长反馈为准。</div></div>";
 
   html+='<div class="dsec"><div class="lbl">匹配你的情况</div><div class="grid g2"><div>'+
    '<h3 class="pro">为什么值得考虑</h3><ul class="tight">'+s.good.map(function(g){return "<li>"+esc(g)+"</li>"}).join("")+"</ul></div><div>"+
@@ -345,6 +398,9 @@ function renderCompare(){
    ["可报专业",function(s){return esc(s.programs.map(function(p){return p.c+" "+p.n+"("+p.t+")"}).join("；"))}],
    ["初试科目倾向",function(s){return esc(s.kemu)}],
    ["最近参考线",function(s){return esc(s.line.map(function(l){return l.y+" "+(l.total||"")}).join("；"))}],
+   ["建议目标分",function(s){var q=scoreInfo(s,state.ans);return "<b style='font-size:16px'>≈ "+q.target+"</b> 分<div class='note'>地板 "+q.floorUse+" + 加成 "+q.add+(q.ref?"（参考院线 "+q.ref+"）":"（未核实到院线）")+"</div>"}],
+   ["国家线地板",function(s){var q=scoreInfo(s,state.ans);return "理学 "+q.fl+" / 工学 "+q.fg+"（"+s.zone+" 区 2026）"}],
+   ["就业与出路",function(s){return "<ul class='tight'>"+(s.emp||[]).map(function(x){return "<li>"+esc(x)+"</li>"}).join("")+"</ul>"}],
    ["招生 / 学费 / 学制",function(s){return esc(s.enroll)+"<br>"+esc(s.tuition)+"<br>"+esc(s.dur)}],
    ["博士点与平台",function(s){return esc(s.phd)+"<br>"+esc(s.platform)}],
    ["就业",function(s){return esc(s.job)}],
@@ -426,9 +482,9 @@ function renderData(){
    '<li>不能用来做什么：它不是录取概率预测，也不能替代当年招生简章。招生人数、推免占比、学院线、参考书这四类信息每年都在变，务必按档案卡的核验清单逐条核对。</li>'+
    '<li>建议用法：先用“智能匹配”生成名单 → 挑 6-8 所进入“志愿单” → 在“志愿对比”并排看 → 逐所打开档案、勾完核验清单 → 9 月新简章发布后再复核一次。</li>'+
    '<li>数据核实日期：2026 年 10 月 21 日。院校信息如有出入，以研招网与招生单位公告为准。</li></ul>';
-  $("masterTable").innerHTML='<table class="cmp"><tr><th>院校</th><th>城市</th><th>层次</th><th>区</th><th>自划线</th><th>化学</th><th>化工</th><th>难度</th><th>默认判定</th><th>可报专业</th><th>最近参考线</th></tr>'+
+  $("masterTable").innerHTML='<table class="cmp"><tr><th>院校</th><th>城市</th><th>层次</th><th>区</th><th>自划线</th><th>化学</th><th>化工</th><th>难度</th><th>建议目标分</th><th>默认判定</th><th>可报专业</th><th>最近参考线</th></tr>'+
    S.slice().sort(function(x,y){return y.diff-x.diff}).map(function(s){var r=recommend(s,state.ans);
-     return "<tr><td><a href='javascript:void(0)' data-open='"+s.id+"'>"+esc(s.name)+"</a></td><td>"+esc(s.city)+"</td><td>"+esc(s.tier)+"</td><td>"+s.zone+"</td><td>"+(s.selfLine?"是":"否")+"</td><td>"+esc(s.hx)+"</td><td>"+esc(s.hg)+"</td><td>"+s.diff.toFixed(1)+"</td><td>"+bucketLabel(r.cls.b)+"</td><td>"+esc(s.programs.map(function(p){return p.c}).join("/"))+"</td><td>"+esc(s.line.map(function(l){return l.y+":"+(l.total||"—")}).join("；"))+"</td></tr>"}).join("")+"</table>";
+     return "<tr><td><a href='javascript:void(0)' data-open='"+s.id+"'>"+esc(s.name)+"</a></td><td>"+esc(s.city)+"</td><td>"+esc(s.tier)+"</td><td>"+s.zone+"</td><td>"+(s.selfLine?"是":"否")+"</td><td>"+esc(s.hx)+"</td><td>"+esc(s.hg)+"</td><td>"+s.diff.toFixed(1)+"</td><td><b>"+scoreInfo(s,state.ans).target+"</b></td><td>"+bucketLabel(r.cls.b)+"</td><td>"+esc(s.programs.map(function(p){return p.c}).join("/"))+"</td><td>"+esc(s.line.map(function(l){return l.y+":"+(l.total||"—")}).join("；"))+"</td></tr>"}).join("")+"</table>";
   Array.prototype.forEach.call($("masterTable").querySelectorAll("[data-open]"),function(x){x.onclick=function(){openSchool(x.getAttribute("data-open"))}});
 }
 
@@ -533,7 +589,7 @@ Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"),function(
     window.scrollTo(0,0);
   };
 });
-["fSearch","fTier","fRegion","fHx","fHg","fDir","fMath","fDiff","fSort"].forEach(function(id){
+["fSearch","fTier","fRegion","fHx","fHg","fDir","fMath","fDiff","fSort","fTarget"].forEach(function(id){
   var e=$(id); e.addEventListener("input",renderLib); e.addEventListener("change",renderLib);
 });
 Array.prototype.forEach.call($("fQuick").querySelectorAll("[data-q]"),function(b){
@@ -552,7 +608,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"){if($("wizar
 
 // 先写入默认画像（该同学已确认的条件），再渲染与路由，保证首屏与向导一致
 if(!state.ans.__init){ state.ans=JSON.parse(JSON.stringify(KD.defaultProfile||{})); save(LS.ans,state.ans); }
-initFilters();renderHero();renderHome();renderQuestions();renderLib();renderCompare();renderPlan();renderData();
+mergeEmp();initFilters();renderHero();renderHome();renderQuestions();renderLib();renderCompare();renderPlan();renderData();
 if(KD.defaultNote) $("matchHint").textContent=KD.defaultNote;
 renderMatch();applyHash();
 
@@ -561,5 +617,5 @@ var _wzStep=wzLoad();
 if(_wzStep>0&&_wzStep<KD.questions.length){ var _b=$("wzResume"); if(_b){ _b.style.display=""; var _s=$("wzStep"); if(_s)_s.textContent=_wzStep+1 } }
 
 /* 仅用于自检与后续调整：把内部函数暴露到 window，方便调试（不影响正常使用） */
-window.__ky={wzOpen:wzOpen,wzRender:wzRender,wzResult:wzResult,wzClose:wzClose,go:go,applyHash:applyHash,state:state,renderMatch:renderMatch,renderHome:renderHome,renderLib:renderLib,renderQuestions:renderQuestions,renderCompare:renderCompare,renderPlan:renderPlan,renderData:renderData,openSchool:openSchool,toggleFav:toggleFav,exportList:exportList,ability:ability,recommend:recommend,classify:classify,fitDetail:fitDetail};
+window.__ky={scoreInfo:scoreInfo,mergeEmp:mergeEmp,wzOpen:wzOpen,wzRender:wzRender,wzResult:wzResult,wzClose:wzClose,go:go,applyHash:applyHash,state:state,renderMatch:renderMatch,renderHome:renderHome,renderLib:renderLib,renderQuestions:renderQuestions,renderCompare:renderCompare,renderPlan:renderPlan,renderData:renderData,openSchool:openSchool,toggleFav:toggleFav,exportList:exportList,ability:ability,recommend:recommend,classify:classify,fitDetail:fitDetail};
 })();
