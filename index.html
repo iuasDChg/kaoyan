@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>应用化学考研择校工作台 · 湖南工程学院定制版</title>
+<meta name="description" content="为湖南工程学院应用化学专业大三学生定制的考研择校工作台：39 所适配院校全档案、分步选项测评、冲稳保三档志愿、可核验数据卡与备考时间线。">
+<meta property="og:title" content="考研择校工作台 · 应用化学（湖南工程学院定制版）">
+<meta property="og:description" content="39 所适配院校全档案 + 分步测评生成冲/稳/保三档志愿名单">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1b4d8f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b4d8f'/%3E%3Ctext x='50%25' y='58%25' font-family='sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3E%E8%80%83%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="kick">APPLICATION OF CHEMISTRY · POSTGRADUATE TARGET FINDER</div>
+    <h1>考研择校工作台</h1>
+    <p>为<b>湖南工程学院 材料与化工学院 应用化学专业 大三</b>同学习惯定制：39 所适配院校全档案、智能匹配三档志愿、可核验的数据卡与备考时间线。</p>
+    <div class="badges" id="heroBadges"></div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="wrap" id="tabbar">
+  <button class="tab on" data-p="home">总览与定位</button>
+  <button class="tab" data-p="match">智能匹配</button>
+  <button class="tab" data-p="lib">院校库</button>
+  <button class="tab" data-p="cmp">志愿对比</button>
+  <button class="tab" data-p="plan">备考路径</button>
+  <button class="tab" data-p="data">数据来源与说明</button>
+</div></nav>
+
+<main class="wrap">
+
+<section class="panel on" id="p-home">
+  <div class="grid g2" id="homeGrid"></div>
+  <div class="card" style="margin-top:16px" id="homePaths"></div>
+</section>
+
+<section class="panel" id="p-match">
+  <div class="card" style="margin-bottom:16px">
+    <h2>第一步：告诉我你的情况</h2>
+    <p class="note" id="modelDesc"></p>
+    <div class="grid g2" id="weightsWrap" style="margin-top:10px"></div>
+    <div class="sep"></div>
+    <div class="row"><button class="btn" id="runMatch">生成我的三档志愿名单</button>
+      <button class="btn ghost" id="resetMatch">清空重填</button>
+      <span class="note" id="matchHint">填写越具体，推荐越可靠；未填项按“平衡”默认处理。</span></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;border:2px solid #1b4d8f;background:linear-gradient(135deg,#eef4ff,#f7fbff)"><div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin-bottom:2px">分步测评（推荐，约 2 分钟）</h2><p class="note" style="margin:0">一屏一题、点选项即可，答完直接给出“冲 / 稳 / 保”名单与报名建议。</p></div><div class="row"><button class="btn" id="wzStart">开始分步测评</button><button class="btn ghost" id="wzResume" style="display:none">继续上次（第 <span id="wzStep"></span> 题）</button></div></div></div><div id="qWrap"></div>
+  <div id="matchResult"></div>
+</section>
+
+<section class="panel" id="p-lib">
+  <div class="card">
+    <div class="filters">
+      <div><label class="f">搜索校名 / 城市 / 方向</label><input type="text" id="fSearch" placeholder="如：湘潭大学、分析化学、南京"></div>
+      <div><label class="f">办学层次</label><select id="fTier"><option value="">全部</option></select></div>
+      <div><label class="f">地区</label><select id="fRegion"><option value="">全部</option></select></div>
+      <div><label class="f">化学学科评估（第四轮）</label><select id="fHx"><option value="">全部</option></select></div>
+      <div><label class="f">化工学科评估（第四轮）</label><select id="fHg"><option value="">全部</option></select></div>
+      <div><label class="f">我想读的方向</label><select id="fDir"><option value="">全部</option></select></div>
+      <div><label class="f">初试是否考数学（一般规律）</label><select id="fMath"><option value="">不限</option><option value="no">优先不考数学（学硕自命题）</option><option value="yes">可接受考数学（专硕/化工）</option></select></div>
+      <div><label class="f">难度档</label><select id="fDiff"><option value="">全部</option><option value="rush">冲刺（4.0+）</option><option value="safe">稳妥（2.8-3.9）</option><option value="backup">保底（<2.8）</option></select></div>
+      <div><label class="f">排序</label><select id="fSort"><option value="diff_desc">难度：高 → 低</option><option value="diff_asc">难度：低 → 高</option><option value="hx">化学学科等级</option><option value="hg">化学工程等级</option><option value="name">校名</option></select></div>
+      <div><label class="f">只看</label><div class="chips" id="fQuick"></div></div>
+    </div>
+    <div class="sep"></div>
+    <div class="row"><span class="count" id="libCount"></span><span class="note">★已核实 ◇参考 ○待你核验 —— 卡片右上星标加入“我的志愿单”，可在“志愿对比”并排看。</span></div>
+  </div>
+  <div class="cards" id="libCards" style="margin-top:16px"></div>
+</section>
+
+<section class="panel" id="p-cmp">
+  <div class="card" style="margin-bottom:14px">
+    <h2>我的志愿单</h2>
+    <p class="note">勾选的院校会出现在这里（本浏览器自动保存）。建议最终形成“冲 1-2 + 稳 2-3 + 保 1-2”的组合，并另附 3-5 所调剂兜底。</p>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm" id="cmpAddTop">对比当前筛选前 4 所</button>
+      <button class="btn ghost sm" id="exportList">导出志愿单（文本）</button>
+      <button class="btn ghost sm" id="clearFav">清空星标</button>
+    </div>
+  </div>
+  <div id="cmpBox"></div>
+</section>
+
+<section class="panel" id="p-plan">
+  <div class="grid g2">
+    <div class="card"><h2>从现在到录取的时间线</h2><div class="tl" id="tlBox"></div></div>
+    <div>
+      <div class="card"><h2>报考路径（专业代码怎么选）</h2><div id="pathTable"></div></div>
+      <div class="card" style="margin-top:16px"><h2>联系导师邮件（可直接改）</h2><div id="mailBox"></div></div>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h2>三档法与择校铁律</h2><div id="stratBox"></div></div>
+    <div class="card"><h2>最容易踩的 7 个坑</h2><div id="pitBox"></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>报名前必须自己核实的事（全平台通用清单）</h2><ul class="checklist" id="globalCheck"></ul></div>
+  <div class="card" style="margin-top:16px"><h2>关键名词，30 秒看懂</h2><div id="termsBox"></div></div>
+</section>
+
+<section class="panel" id="p-data">
+  <div class="grid g2">
+    <div class="card"><h2>数据来源</h2><ul class="tight" id="srcList"></ul>
+      <div class="sep"></div><h3>标注体系</h3><div id="legendBox"></div></div>
+    <div class="card"><h2>国家线（理学 / 工学，A 区与 B 区）</h2><div id="lineTable"></div><p class="note" id="lineTrend"></p></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>这套数据能用来做什么、不能用来做什么</h2><div id="disclaimer"></div></div>
+  <div class="card" style="margin-top:16px"><h2>全部院校 · 学科评估与难度总表</h2><div class="cmpwrap" id="masterTable"></div></div>
+</section>
+
+</main>
+
+<footer><div class="wrap">本页为静态本地文件，无后台、不联网上传任何填写内容；院校数据核实日期 2026-10-21，报考前请以研招网与院校研究生院当年公告为准。</div></footer>
+
+<div class="veil" id="veil"></div>
+<div class="veil wv" id="wveil"></div>
+<aside class="wizard" id="wizard" aria-label="分步测评"></aside>
+<aside class="drawer" id="drawer" aria-label="院校详情"></aside>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
