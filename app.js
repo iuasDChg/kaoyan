@@ -132,7 +132,7 @@ function renderHome(){
    st.facts.map(function(f){return "<li>"+sMark(f.s)+" "+esc(f.t)+' <span class="note">来源：'+esc(f.src)+"</span></li>"}).join("")+
    "</ul><div class='sep'></div><p class='note'>结论：本校已具备材料与化工硕士点、且有约三成毕业生考研录取——你的目标是现实的。择校的关键不是“能不能考”，而是“用哪条路径、报哪所学院、留哪几个兜底”。</p></div>"+
    '<div class="card"><h2>当前匹配画像</h2><p class="note">能力指数（2.0-4.3，越高代表可冲击难度越大）</p><div class="big">'+ab.toFixed(2)+
-   ' <span class="note" style="font-size:13px">/ 5</span></div><div class="sep"></div>'+
+   ' <span class="note" style="font-size:13px">/ 4.3（满分）</span></div><div class="sep"></div>'+
    '<div class="row" style="margin-bottom:10px"><button class="btn sm" id="homeWz">继续分步测评</button><button class="btn sm ghost" id="homeGo">直接看全部条件面板</button></div><div class="row"><span class="pill r">冲刺 '+dist.rush+" 所</span><span class='pill b'>稳妥 "+dist.safe+" 所</span><span class='pill g'>保底 "+dist.backup+" 所</span></div>"+
    '<p class="note" style="margin-top:10px">按你当前条件，综合匹配度最高的“冲 2 + 稳 2 + 保 2”：</p><ul class="tight">'+
    best.map(function(s){var r=recommend(s,state.ans);return "<li><a href='javascript:void(0)' data-open='"+s.id+"'>"+esc(s.name)+"</a> <span class='pill "+bucketCls(r.cls.b)+"'>"+bucketLabel(r.cls.b)+"</span> <span class='note'>匹配 "+r.index+" 分 · 化学 "+esc(s.hx)+" / 化工 "+esc(s.hg)+"</span></li>"}).join("")+
